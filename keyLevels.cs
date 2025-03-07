@@ -37,6 +37,7 @@ namespace NinjaTrader.NinjaScript.Indicators
         private Pivots pivots1;
 		private int firstBarOfSession;
 		private SimpleFont myFont;
+		
 		       
         private bool yPOCCalculated;         // flag to ensure we compute yesterday's POC only once
 		
@@ -113,8 +114,8 @@ namespace NinjaTrader.NinjaScript.Indicators
 		        firstBarOfSession = CurrentBar;
 				_yPOC = 0;
 				yPOCCalculated = false;
-				_ORHigh = 0;
-                _ORLow = double.MaxValue;
+				_ORHigh = High[0];
+    			_ORLow = Low[0];
                 _ORCenter = 0;
                 ORCompleted = false;
 		    }
@@ -163,22 +164,21 @@ namespace NinjaTrader.NinjaScript.Indicators
                 }
             }
 			
-			// Calculate the Opening Range for the first 15 minutes (9:30 to 9:45).
-			TimeSpan sessionOpen = new TimeSpan(9, 30, 0);
-            TimeSpan openingRangeEnd = new TimeSpan(9, 45, 0);
-            TimeSpan currentTime = Time[0].TimeOfDay;
-            if (currentTime >= sessionOpen && currentTime < openingRangeEnd)
-            {
-                _ORHigh = Math.Max(_ORHigh, High[0]);
-                _ORLow = Math.Min(_ORLow, Low[0]);
-            }
-            else if (currentTime >= openingRangeEnd && !ORCompleted)
-            {
-                _ORCenter = (_ORHigh + _ORLow) / 2;
-                ORCompleted = true;
-            }
+			SessionIterator sessionIterator = new SessionIterator(Bars);
+			DateTime tradingDay = sessionIterator.GetTradingDay(Time[0]);
+			DateTime sessionOpenDT  = tradingDay.Date.Add(new TimeSpan(9, 30, 0));
+			DateTime sessionOREndDT = tradingDay.Date.Add(new TimeSpan(9, 45, 0));
 			
-			
+			if (Time[0] >= sessionOpenDT && Time[0] < sessionOREndDT)
+			{
+			    _ORHigh = Math.Max(_ORHigh, High[0]);
+			    _ORLow  = Math.Min(_ORLow, Low[0]);
+			}
+			else if (Time[0] >= sessionOREndDT && !ORCompleted)
+			{
+			    _ORCenter = (_ORHigh + _ORLow) / 2;
+			    ORCompleted = true;
+			}
 
 
             // Retrieve the key levels from the sub-indicators.
@@ -221,11 +221,7 @@ namespace NinjaTrader.NinjaScript.Indicators
 
             // Optionally draw each key level as a horizontal line.
             if (DrawLevels)
-            {
-				
-//				RemoveDrawObject("yOpen"); RemoveDrawObject("yHigh"); RemoveDrawObject("yLow"); RemoveDrawObject("yClose");
-//                RemoveDrawObject("tOpen"); RemoveDrawObject("tHigh"); RemoveDrawObject("tLow");
-//                RemoveDrawObject("tPP"); RemoveDrawObject("tR1"); RemoveDrawObject("tS1");
+            {				
 				
 				int startBarsAgo = CurrentBar - firstBarOfSession;
 
