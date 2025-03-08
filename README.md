@@ -1,5 +1,5 @@
 # KeyLevels
-NinjaTrader 8 indicator that combines the previous day's OHLC and POC with the current day's OHL, Pivot Point, R1, S1, POC, and Opening Range High/Low/Center into a single collection of key levels.
+NinjaTrader 8 indicator that combines the previous day's OHLC and POC with the current day's OHL, Pivot Point, R1, S1, POC, Opening Range High/Low/Center, and Initial Balance High/Low/Center into a single collection of key levels.
 
 **Installation:**
 
