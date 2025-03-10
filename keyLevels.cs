@@ -135,6 +135,32 @@ namespace NinjaTrader.NinjaScript.Indicators
             get { return Serialize.BrushToString(KeyLevelColor); }
             set { KeyLevelColor = Serialize.StringToBrush(value); }
         }
+        
+        // New property for Open Range level color
+        [NinjaScriptProperty]
+        [XmlIgnore]
+        [Display(Name = "Open Range Color", Order = 3, GroupName = "Parameters")]
+        public Brush OpenRangeColor { get; set; } = Brushes.DeepPink;
+
+        [Browsable(false)]
+        public string OpenRangeColorSerialize
+        {
+            get { return Serialize.BrushToString(OpenRangeColor); }
+            set { OpenRangeColor = Serialize.StringToBrush(value); }
+        }
+
+        // New property for Initial Balance level color
+        [NinjaScriptProperty]
+        [XmlIgnore]
+        [Display(Name = "Initial Balance Color", Order = 4, GroupName = "Parameters")]
+        public Brush IBColor { get; set; } = Brushes.Cyan;
+
+        [Browsable(false)]
+        public string IBColorSerialize
+        {
+            get { return Serialize.BrushToString(IBColor); }
+            set { IBColor = Serialize.StringToBrush(value); }
+        }
 
         /////////// New Checkbox Parameters for Groups ///////////
         [NinjaScriptProperty]
@@ -175,7 +201,7 @@ namespace NinjaTrader.NinjaScript.Indicators
         [NinjaScriptProperty]
         [PropertyEditor("NinjaTrader.Gui.Tools.TimeEditorKey")]
         [Display(Name = "Open Range End Time", Order = 21, GroupName = "Open Range Settings", Description = "Configure the end time for the Open Range period")]
-        public DateTime OpenRangeEnd { get; set; } =  DateTime.Parse("10:00", System.Globalization.CultureInfo.InvariantCulture);
+        public DateTime OpenRangeEnd { get; set; } =  DateTime.Parse("09:35", System.Globalization.CultureInfo.InvariantCulture);
 
         // --------- New Configurable Initial Balance Times ---------
         [NinjaScriptProperty]
@@ -234,14 +260,14 @@ namespace NinjaTrader.NinjaScript.Indicators
                 firstBarOfSession = CurrentBar;
                 _yPOC = 0;
                 yPOCCalculated = false;
-                _ORHigh = High[0];
-                _ORLow = Low[0];
+                _ORHigh = double.MinValue; 
+                _ORLow = double.MaxValue;
                 _ORCenter = 0;
                 ORCompleted = false;
 
                 // ---- Reset Initial Balance variables at session start ----
-                _IBHigh = High[0];
-                _IBLow = Low[0];
+                _IBHigh = double.MinValue;
+                _IBLow = double.MaxValue;
                 _IBCenter = 0;
                 IBCompleted = false;
             }
@@ -291,12 +317,12 @@ namespace NinjaTrader.NinjaScript.Indicators
             DateTime sessionOpenDT  = tradingDay.Date.Add(OpenRangeStart.TimeOfDay);
             DateTime sessionOREndDT = tradingDay.Date.Add(OpenRangeEnd.TimeOfDay);
 			
-            if (Time[0] >= sessionOpenDT && Time[0] < sessionOREndDT)
+            if (Time[0] > sessionOpenDT && Time[0] <= sessionOREndDT)
             {
                 _ORHigh = Math.Max(_ORHigh, High[0]);
                 _ORLow = Math.Min(_ORLow, Low[0]);
             }
-            else if (Time[0] >= sessionOREndDT && !ORCompleted)
+            else if (Time[0] > sessionOREndDT && !ORCompleted)
             {
                 _ORCenter = (_ORHigh + _ORLow) / 2;
                 ORCompleted = true;
@@ -305,12 +331,12 @@ namespace NinjaTrader.NinjaScript.Indicators
             // ---- Compute Initial Balance (IB) using its own configurable times ----
             DateTime sessionIBStartDT = tradingDay.Date.Add(IBStart.TimeOfDay);
             DateTime sessionIBEndDT = tradingDay.Date.Add(IBEnd.TimeOfDay);
-            if (Time[0] >= sessionIBStartDT && Time[0] < sessionIBEndDT)
+            if (Time[0] > sessionIBStartDT && Time[0] <= sessionIBEndDT)
             {
                 _IBHigh = Math.Max(_IBHigh, High[0]);
                 _IBLow = Math.Min(_IBLow, Low[0]);
             }
-            else if (Time[0] >= sessionIBEndDT && !IBCompleted)
+            else if (Time[0] > sessionIBEndDT && !IBCompleted)
             {
                 _IBCenter = (_IBHigh + _IBLow) / 2;
                 IBCompleted = true;
@@ -435,27 +461,27 @@ namespace NinjaTrader.NinjaScript.Indicators
                     Draw.Text(this, "label_tR1", false, "tR1", labelBarsAgo, TR1, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
                     Draw.Text(this, "label_tS1", false, "tS1", labelBarsAgo, TS1, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
                 }
-                // Open Range lines/text
+                // Open Range lines/text using OpenRangeColor
                 if (ShowOpenRange && ORCompleted)
                 {
-                    Draw.Line(this, "ORHigh", false, startBarsAgo, ORHigh, 0, ORHigh, KeyLevelColor, DashStyleHelper.Dot, 2);
-                    Draw.Line(this, "ORLow", false, startBarsAgo, ORLow, 0, ORLow, KeyLevelColor, DashStyleHelper.Dot, 2);
-                    Draw.Line(this, "ORCenter", false, startBarsAgo, ORCenter, 0, ORCenter, KeyLevelColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "ORHigh", false, startBarsAgo, ORHigh, 0, ORHigh, OpenRangeColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "ORLow", false, startBarsAgo, ORLow, 0, ORLow, OpenRangeColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "ORCenter", false, startBarsAgo, ORCenter, 0, ORCenter, OpenRangeColor, DashStyleHelper.Dot, 2);
 
-                    Draw.Text(this, "label_ORHigh", false, "ORHigh", labelBarsAgo, ORHigh, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
-                    Draw.Text(this, "label_ORLow", false, "ORLow", labelBarsAgo, ORLow, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
-                    Draw.Text(this, "label_ORCenter", false, "ORCenter", labelBarsAgo, ORCenter, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_ORHigh", false, "ORHigh", labelBarsAgo, ORHigh, offset, OpenRangeColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_ORLow", false, "ORLow", labelBarsAgo, ORLow, offset, OpenRangeColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_ORCenter", false, "ORCenter", labelBarsAgo, ORCenter, offset, OpenRangeColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
                 }
-                // ---- Initial Balance lines/text ----
+                // ---- Initial Balance lines/text using IBColor ----
                 if (ShowInitialBalance && IBCompleted)
                 {
-                    Draw.Line(this, "IBHigh", false, startBarsAgo, IBHigh, 0, IBHigh, KeyLevelColor, DashStyleHelper.Dot, 2);
-                    Draw.Line(this, "IBLow", false, startBarsAgo, IBLow, 0, IBLow, KeyLevelColor, DashStyleHelper.Dot, 2);
-                    Draw.Line(this, "IBCenter", false, startBarsAgo, IBCenter, 0, IBCenter, KeyLevelColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "IBHigh", false, startBarsAgo, IBHigh, 0, IBHigh, IBColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "IBLow", false, startBarsAgo, IBLow, 0, IBLow, IBColor, DashStyleHelper.Dot, 2);
+                    Draw.Line(this, "IBCenter", false, startBarsAgo, IBCenter, 0, IBCenter, IBColor, DashStyleHelper.Dot, 2);
 
-                    Draw.Text(this, "label_IBHigh", false, "IBHigh", labelBarsAgo, IBHigh, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
-                    Draw.Text(this, "label_IBLow", false, "IBLow", labelBarsAgo, IBLow, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
-                    Draw.Text(this, "label_IBCenter", false, "IBCenter", labelBarsAgo, IBCenter, offset, KeyLevelColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_IBHigh", false, "IBHigh", labelBarsAgo, IBHigh, offset, IBColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_IBLow", false, "IBLow", labelBarsAgo, IBLow, offset, IBColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
+                    Draw.Text(this, "label_IBCenter", false, "IBCenter", labelBarsAgo, IBCenter, offset, IBColor, myFont, TextAlignment.Left, Brushes.Transparent, Brushes.Transparent, 0);
                 }
             }
         }
@@ -469,18 +495,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private KeyLevels[] cacheKeyLevels;
-		public KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
-			return KeyLevels(Input, drawLevels, keyLevelColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
+			return KeyLevels(Input, drawLevels, keyLevelColor, openRangeColor, iBColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
 		}
 
-		public KeyLevels KeyLevels(ISeries<double> input, bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public KeyLevels KeyLevels(ISeries<double> input, bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
 			if (cacheKeyLevels != null)
 				for (int idx = 0; idx < cacheKeyLevels.Length; idx++)
-					if (cacheKeyLevels[idx] != null && cacheKeyLevels[idx].DrawLevels == drawLevels && cacheKeyLevels[idx].KeyLevelColor == keyLevelColor && cacheKeyLevels[idx].ShowYPOC == showYPOC && cacheKeyLevels[idx].ShowTPOC == showTPOC && cacheKeyLevels[idx].ShowOpenRange == showOpenRange && cacheKeyLevels[idx].ShowYesterdayOHLC == showYesterdayOHLC && cacheKeyLevels[idx].ShowTodayOHL == showTodayOHL && cacheKeyLevels[idx].ShowTodayPivotPoints == showTodayPivotPoints && cacheKeyLevels[idx].ShowInitialBalance == showInitialBalance && cacheKeyLevels[idx].OpenRangeStart == openRangeStart && cacheKeyLevels[idx].OpenRangeEnd == openRangeEnd && cacheKeyLevels[idx].IBStart == iBStart && cacheKeyLevels[idx].IBEnd == iBEnd && cacheKeyLevels[idx].EqualsInput(input))
+					if (cacheKeyLevels[idx] != null && cacheKeyLevels[idx].DrawLevels == drawLevels && cacheKeyLevels[idx].KeyLevelColor == keyLevelColor && cacheKeyLevels[idx].OpenRangeColor == openRangeColor && cacheKeyLevels[idx].IBColor == iBColor && cacheKeyLevels[idx].ShowYPOC == showYPOC && cacheKeyLevels[idx].ShowTPOC == showTPOC && cacheKeyLevels[idx].ShowOpenRange == showOpenRange && cacheKeyLevels[idx].ShowYesterdayOHLC == showYesterdayOHLC && cacheKeyLevels[idx].ShowTodayOHL == showTodayOHL && cacheKeyLevels[idx].ShowTodayPivotPoints == showTodayPivotPoints && cacheKeyLevels[idx].ShowInitialBalance == showInitialBalance && cacheKeyLevels[idx].OpenRangeStart == openRangeStart && cacheKeyLevels[idx].OpenRangeEnd == openRangeEnd && cacheKeyLevels[idx].IBStart == iBStart && cacheKeyLevels[idx].IBEnd == iBEnd && cacheKeyLevels[idx].EqualsInput(input))
 						return cacheKeyLevels[idx];
-			return CacheIndicator<KeyLevels>(new KeyLevels(){ DrawLevels = drawLevels, KeyLevelColor = keyLevelColor, ShowYPOC = showYPOC, ShowTPOC = showTPOC, ShowOpenRange = showOpenRange, ShowYesterdayOHLC = showYesterdayOHLC, ShowTodayOHL = showTodayOHL, ShowTodayPivotPoints = showTodayPivotPoints, ShowInitialBalance = showInitialBalance, OpenRangeStart = openRangeStart, OpenRangeEnd = openRangeEnd, IBStart = iBStart, IBEnd = iBEnd }, input, ref cacheKeyLevels);
+			return CacheIndicator<KeyLevels>(new KeyLevels(){ DrawLevels = drawLevels, KeyLevelColor = keyLevelColor, OpenRangeColor = openRangeColor, IBColor = iBColor, ShowYPOC = showYPOC, ShowTPOC = showTPOC, ShowOpenRange = showOpenRange, ShowYesterdayOHLC = showYesterdayOHLC, ShowTodayOHL = showTodayOHL, ShowTodayPivotPoints = showTodayPivotPoints, ShowInitialBalance = showInitialBalance, OpenRangeStart = openRangeStart, OpenRangeEnd = openRangeEnd, IBStart = iBStart, IBEnd = iBEnd }, input, ref cacheKeyLevels);
 		}
 	}
 }
@@ -489,14 +515,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public Indicators.KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
-			return indicator.KeyLevels(Input, drawLevels, keyLevelColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
+			return indicator.KeyLevels(Input, drawLevels, keyLevelColor, openRangeColor, iBColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
 		}
 
-		public Indicators.KeyLevels KeyLevels(ISeries<double> input , bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public Indicators.KeyLevels KeyLevels(ISeries<double> input , bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
-			return indicator.KeyLevels(input, drawLevels, keyLevelColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
+			return indicator.KeyLevels(input, drawLevels, keyLevelColor, openRangeColor, iBColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
 		}
 	}
 }
@@ -505,14 +531,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public Indicators.KeyLevels KeyLevels(bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
-			return indicator.KeyLevels(Input, drawLevels, keyLevelColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
+			return indicator.KeyLevels(Input, drawLevels, keyLevelColor, openRangeColor, iBColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
 		}
 
-		public Indicators.KeyLevels KeyLevels(ISeries<double> input , bool drawLevels, Brush keyLevelColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
+		public Indicators.KeyLevels KeyLevels(ISeries<double> input , bool drawLevels, Brush keyLevelColor, Brush openRangeColor, Brush iBColor, bool showYPOC, bool showTPOC, bool showOpenRange, bool showYesterdayOHLC, bool showTodayOHL, bool showTodayPivotPoints, bool showInitialBalance, DateTime openRangeStart, DateTime openRangeEnd, DateTime iBStart, DateTime iBEnd)
 		{
-			return indicator.KeyLevels(input, drawLevels, keyLevelColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
+			return indicator.KeyLevels(input, drawLevels, keyLevelColor, openRangeColor, iBColor, showYPOC, showTPOC, showOpenRange, showYesterdayOHLC, showTodayOHL, showTodayPivotPoints, showInitialBalance, openRangeStart, openRangeEnd, iBStart, iBEnd);
 		}
 	}
 }
