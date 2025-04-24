@@ -1,6 +1,10 @@
 # KeyLevels
 NinjaTrader 8 indicator that combines the previous day's OHLC and POC with the current day's OHL, Pivot Point, R1, S1, POC, Opening Range High/Low/Center, and Initial Balance High/Low/Center into a single collection of key levels.
 
+## Updates
+1. Added new plots for London Open, High, and Low.
+2. Temporarily removed Value Area and POC plots. They didn't perfectly align with the NT Volume Profile values.
+
 **Installation:**
 
 Download the .CS file and place it in your indicators folder.
